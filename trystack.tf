@@ -25,6 +25,19 @@ resource "openstack_networking_secgroup_rule_v2" "ssh" {
   security_group_id = "${openstack_networking_secgroup_v2.admin.id}"
 }
 
+resource "openstack_networking_network_v2" "internal" {
+  name           = "internal"
+  admin_state_up = "true"
+}
+
+resource "openstack_networking_subnet_v2" "admin" {
+  name            = "admin"
+  network_id      = "${openstack_networking_network_v2.internal.id}"
+  cidr            = "10.10.10.0/24"
+  ip_version      = 4
+  dns_nameservers = ["8.8.8.8"]
+}
+
 resource "openstack_networking_secgroup_rule_v2" "ping" {
   direction         = "ingress"
   ethertype         = "IPv4"
