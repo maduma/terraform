@@ -1,3 +1,4 @@
+
 provider "openstack" {
   user_name   = "facebook100000270138421"
   tenant_name = "facebook100000270138421"
@@ -25,6 +26,14 @@ resource "openstack_networking_secgroup_rule_v2" "ssh" {
   security_group_id = "${openstack_networking_secgroup_v2.admin.id}"
 }
 
+resource "openstack_networking_secgroup_rule_v2" "ping" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "icmp"
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = "${openstack_networking_secgroup_v2.admin.id}"
+}
+
 resource "openstack_networking_network_v2" "internal" {
   name           = "internal"
   admin_state_up = "true"
@@ -38,26 +47,33 @@ resource "openstack_networking_subnet_v2" "admin" {
   dns_nameservers = ["8.8.8.8"]
 }
 
+resource "openstack_networking_router_v2" "router" {
+  name = "router"
+  external_network_id = "1fd0a21e-e700-46ae-9f05-0b3164daafcc"
+}
+
+resource "openstack_networking_router_interface_v2" "router_internal" {
+  router_id = "${openstack_networking_router_v2.router.id}"
+  subnet_id = "${openstack_networking_subnet_v2.admin.id}"
+}
+
 resource "openstack_networking_floatingip_v2" "publicip" {
   pool = "public"
 }
 
-resource "openstack_networking_secgroup_rule_v2" "ping" {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "icmp"
-  remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = "${openstack_networking_secgroup_v2.admin.id}"
+resource "openstack_compute_instance_v2" "rproxy" {
+  name            = "rproxy"
+  image_name      = "Ubuntu16.04"
+  flavor_name     = "m1.small"
+  key_pair        = "snsakala"
+  security_groups = ["admin"]
+
+  network {
+    name = "internal"
+  }
 }
 
-resource "openstack_networking_router_v2" "router" {
-  name = "router"
+resource "openstack_compute_floatingip_associate_v2" "rproxyip" {
+  floating_ip = "${openstack_networking_floatingip_v2.publicip.address}"
+  instance_id = "${openstack_compute_instance_v2.rproxy.id}"
 }
-/*
-resource "openstack_compute_instance_v2" "rproxy" {
-  name        = "rproxy"
-  image_name  = "Ubuntu16.04"
-  flavor_name = "m1.small"
-  key_pair    = "snsakala"
-}
-*/
