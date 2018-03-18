@@ -71,7 +71,7 @@ resource "openstack_compute_instance_v2" "rproxy" {
   flavor_name     = "m1.small"
   key_pair        = "snsakala"
   security_groups = ["admin"]
-  user_data       = "!#/bin/bash -x\n curl -s ${var.bootstrap} | bash"
+  user_data       = "#!/bin/bash -x\ncurl -s ${var.bootstrap} | bash -x\n"
 
   network {
     name = "internal"
