@@ -38,6 +38,10 @@ resource "openstack_networking_subnet_v2" "admin" {
   dns_nameservers = ["8.8.8.8"]
 }
 
+resource "openstack_networking_floatingip_v2" "publicip" {
+  pool = "public"
+}
+
 resource "openstack_networking_secgroup_rule_v2" "ping" {
   direction         = "ingress"
   ethertype         = "IPv4"
