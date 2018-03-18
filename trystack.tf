@@ -1,8 +1,12 @@
+variable "password" {}
+variable "bootstrap" {
+  default = "https://raw.githubusercontent.com/maduma/install_docker_ubuntu/master/install-docker.sh"
+}
 
 provider "openstack" {
   user_name   = "facebook100000270138421"
   tenant_name = "facebook100000270138421"
-  password    = "U4DVnzyKqieV0VoO"
+  password    = "${var.password}"
   auth_url    = "http://8.43.86.2:5000/v2.0"
   region      = "RegionOne"
 }
@@ -67,6 +71,7 @@ resource "openstack_compute_instance_v2" "rproxy" {
   flavor_name     = "m1.small"
   key_pair        = "snsakala"
   security_groups = ["admin"]
+  user_data       = "!#/bin/bash -x\n curl -s ${var.bootstrap} | bash"
 
   network {
     name = "internal"
@@ -76,4 +81,8 @@ resource "openstack_compute_instance_v2" "rproxy" {
 resource "openstack_compute_floatingip_associate_v2" "rproxyip" {
   floating_ip = "${openstack_networking_floatingip_v2.publicip.address}"
   instance_id = "${openstack_compute_instance_v2.rproxy.id}"
+}
+
+output "publicip" {
+  value = "${openstack_networking_floatingip_v2.publicip.address}"
 }
