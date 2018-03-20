@@ -61,16 +61,14 @@ resource "openstack_networking_router_interface_v2" "router_internal" {
   subnet_id = "${openstack_networking_subnet_v2.admin.id}"
 }
 
-resource "openstack_networking_floatingip_v2" "publicip" {
-  pool = "public"
-}
 
-resource "openstack_compute_instance_v2" "rproxy" {
-  name            = "rproxy"
+resource "openstack_compute_instance_v2" "docker" {
+  count           = 2
+  name            = "docker${count.index}"
   image_name      = "Ubuntu16.04"
   flavor_name     = "m1.small"
   key_pair        = "snsakala"
-  security_groups = ["admin"]
+  security_groups = ["default", "admin"]
   user_data       = "#!/bin/bash -x\ncurl -s ${var.bootstrap} | bash -x\n"
 
   network {
@@ -78,9 +76,26 @@ resource "openstack_compute_instance_v2" "rproxy" {
   }
 }
 
-resource "openstack_compute_floatingip_associate_v2" "rproxyip" {
+resource "openstack_compute_instance_v2" "proxy" {
+  name            = "proxy"
+  image_name      = "Ubuntu16.04"
+  flavor_name     = "m1.small"
+  key_pair        = "snsakala"
+  security_groups = ["default", "admin"]
+  user_data       = "#!/bin/bash -x\ncurl -s ${var.bootstrap} | bash -x\n"
+
+  network {
+    name = "internal"
+  }
+}
+
+resource "openstack_networking_floatingip_v2" "publicip" {
+  pool = "public"
+}
+
+resource "openstack_compute_floatingip_associate_v2" "proxyip" {
   floating_ip = "${openstack_networking_floatingip_v2.publicip.address}"
-  instance_id = "${openstack_compute_instance_v2.rproxy.id}"
+  instance_id = "${openstack_compute_instance_v2.proxy.id}"
 }
 
 output "publicip" {
